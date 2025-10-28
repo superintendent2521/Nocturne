@@ -19,7 +19,10 @@ pip install -r requirements.txt
 ```bash
 python app.py
 ```
-
+# Or
+```bash
+nocturne
+```
 ## Tips
 - Headers use `Key: Value` on separate lines.
 - GraphQL variables must be valid JSON.
