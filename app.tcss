@@ -1,0 +1,51 @@
+Screen {
+    layout: vertical;
+    background: $surface;
+}
+
+#status {
+    dock: top;
+    padding: 0 1;
+    background: $panel;
+}
+
+#main-tabs {
+    height: 1fr;
+}
+
+TabPane {
+    padding: 1 2;
+}
+
+#rest_layout,
+#graphql_layout,
+#ws_layout {
+    height: 1fr;
+}
+
+.panel {
+    width: 1fr;
+    height: 1fr;
+    border: tall $boost;
+    background: $panel;
+    padding: 1;
+}
+
+Label {
+    color: $text-muted;
+}
+
+TextArea,
+RichLog {
+    height: 1fr;
+    border: round $secondary;
+}
+
+#ws_buttons {
+    width: 1fr;
+    align-horizontal: center;
+}
+
+Button {
+    min-width: 16;
+}
