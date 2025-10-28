@@ -1,8 +1,8 @@
 [project]
-name = "nocturne"
+name = "nocturne-api"
 version = "0.1.0"
 description = "Terminal API workbench for REST, GraphQL, and WebSockets using Textual."
-authors = [{ name = "Nocturne" }]
+authors = [{ name = "Superintendent2521" }]
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
