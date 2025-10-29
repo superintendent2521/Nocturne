@@ -1,6 +1,6 @@
 [project]
 name = "nocturne-api"
-version = "0.3"
+version = "0.4"
 description = "Terminal API workbench for REST, GraphQL, and WebSockets using Textual."
 authors = [{ name = "Superintendent2521" }]
 readme = "README.md"
