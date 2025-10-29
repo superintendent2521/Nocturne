@@ -59,7 +59,7 @@ class RestResponse:
 class ResponseDisplay(Static):
     """Render HTTP responses with headings."""
 
-    # 3) Optional: pretty-print JSON in ResponseDisplay
+    
     def update_with_response(self, response: RestResponse) -> None:
         body = response.body
         try:
