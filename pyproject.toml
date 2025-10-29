@@ -1,6 +1,6 @@
 [project]
 name = "nocturne-api"
-version = "0.2"
+version = "0.3"
 description = "Terminal API workbench for REST, GraphQL, and WebSockets using Textual."
 authors = [{ name = "Superintendent2521" }]
 readme = "README.md"
@@ -17,3 +17,9 @@ nocturne = "app:main"
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["nocturne_api"]
+
+[tool.setuptools.package-data]
+nocturne_api = ["app.tcss"]

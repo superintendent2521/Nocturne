@@ -22,6 +22,7 @@ from textual.widgets import (
     TabPane,
     TextArea,
 )
+from textual.css.query import NoMatches
 
 
 def parse_headers(raw: str) -> Dict[str, str]:
@@ -58,7 +59,14 @@ class RestResponse:
 class ResponseDisplay(Static):
     """Render HTTP responses with headings."""
 
+    # 3) Optional: pretty-print JSON in ResponseDisplay
     def update_with_response(self, response: RestResponse) -> None:
+        body = response.body
+        try:
+            body = json.dumps(json.loads(body), indent=2, ensure_ascii=False)
+            code_lang = "json"
+        except Exception:
+            code_lang = ""
         markdown = Markdown(
             f"### {response.status_code} {response.reason_phrase}\n"
             f"- Time: {response.elapsed:.2f} ms\n"
@@ -66,9 +74,10 @@ class ResponseDisplay(Static):
             + "\n".join([f"    - **{k}**: {v}" for k, v in response.headers.items()])
             + "\n"
             "### Body\n\n"
-            f"```\n{response.body}\n```"
+            f"```{code_lang}\n{body}\n```"
         )
         self.update(markdown)
+
 
     def update_with_error(self, error: str) -> None:
         self.update(Markdown(f"### Error\n\n```\n{error}\n```"))
@@ -195,8 +204,14 @@ class RequestWorkbenchApp(App):
             id="ws_layout",
         )
 
+    def _set_status(self, message: str) -> None:
+        """Safely update the status indicator if it is still mounted."""
+        try:
+            self.query_one(StatusIndicator).status = message
+        except NoMatches:
+            pass
+
     async def _send_rest_request(self) -> None:
-        status = self.query_one(StatusIndicator)
         method = self.query_one("#rest_method", Select).value
         url = self.query_one("#rest_url", Input).value.strip()
         headers_raw = self.query_one("#rest_headers", TextArea).text
@@ -213,16 +228,18 @@ class RequestWorkbenchApp(App):
             response_display.update_with_error(str(error))
             return
 
-        status.status = f"Sending {method} {url}"
+        self._set_status(f"Sending {method} {url}")
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.request(method, url, headers=headers or None, content=body or None)
         except Exception as error:
-            status.status = "Request failed"
+            self._set_status("Request failed")
             response_display.update_with_error(str(error))
             return
 
-        status.status = f"Received {response.status_code} in {response.elapsed.total_seconds() * 1000:.2f} ms"
+        self._set_status(
+            f"Received {response.status_code} in {response.elapsed.total_seconds() * 1000:.2f} ms"
+        )
         rest_response = RestResponse(
             status_code=response.status_code,
             reason_phrase=response.reason_phrase,
@@ -233,7 +250,6 @@ class RequestWorkbenchApp(App):
         response_display.update_with_response(rest_response)
 
     async def _send_graphql_request(self) -> None:
-        status = self.query_one(StatusIndicator)
         url = self.query_one("#graphql_url", Input).value.strip()
         query = self.query_one("#graphql_query", TextArea).text.strip()
         headers_raw = self.query_one("#graphql_headers", TextArea).text
@@ -267,16 +283,16 @@ class RequestWorkbenchApp(App):
         if variables is not None:
             payload["variables"] = variables
 
-        status.status = f"Posting GraphQL query to {url}"
+        self._set_status(f"Posting GraphQL query to {url}")
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(url, headers=headers or None, json=payload)
         except Exception as error:
-            status.status = "GraphQL request failed"
+            self._set_status("GraphQL request failed")
             response_display.update_with_error(str(error))
             return
 
-        status.status = f"GraphQL {response.status_code}"
+        self._set_status(f"GraphQL {response.status_code}")
         graph_response = RestResponse(
             status_code=response.status_code,
             reason_phrase=response.reason_phrase,
@@ -287,7 +303,6 @@ class RequestWorkbenchApp(App):
         response_display.update_with_response(graph_response)
 
     async def _connect_websocket(self) -> None:
-        status = self.query_one(StatusIndicator)
         url = self.query_one("#ws_url", Input).value.strip()
         headers_raw = self.query_one("#ws_headers", TextArea).text
         log_widget = self.query_one("#ws_log", RichLog)
@@ -306,17 +321,17 @@ class RequestWorkbenchApp(App):
             log_widget.write(f"[red]Header error:[/red] {error}")
             return
 
-        status.status = f"Connecting to {url}"
+        self._set_status(f"Connecting to {url}")
         log_widget.clear()
         try:
             self._ws_connection = await websockets.connect(url, additional_headers=headers or None)
         except Exception as error:
-            status.status = "WebSocket connection failed"
+            self._set_status("WebSocket connection failed")
             log_widget.write(f"[red]Connection error:[/red] {error}")
             self._ws_connection = None
             return
 
-        status.status = "WebSocket connected"
+        self._set_status("WebSocket connected")
         log_widget.write(f"[green]Connected to {url}[/green]")
         self._ws_receiver = asyncio.create_task(self._receive_websocket_messages())
 
@@ -333,7 +348,7 @@ class RequestWorkbenchApp(App):
         finally:
             self._ws_connection = None
             self._ws_receiver = None
-            self.query_one(StatusIndicator).status = "WebSocket disconnected"
+            self._set_status("WebSocket disconnected")
 
     async def _disconnect_websocket(self) -> None:
         if self._ws_connection is None:
@@ -346,7 +361,7 @@ class RequestWorkbenchApp(App):
             self._ws_connection = None
             if self._ws_receiver:
                 self._ws_receiver.cancel()
-            self.query_one(StatusIndicator).status = "WebSocket disconnected"
+            self._set_status("WebSocket disconnected")
             self.query_one("#ws_log", RichLog).write("[yellow]Disconnected[/yellow]")
 
     async def _send_websocket_message(self) -> None:
