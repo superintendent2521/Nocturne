@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.scripts]
-nocturne = "app:main"
+nocturne = "nocturne_api.app:main"
 
 [build-system]
 requires = ["setuptools", "wheel"]
